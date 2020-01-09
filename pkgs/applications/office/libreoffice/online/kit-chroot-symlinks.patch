@@ -1,0 +1,81 @@
+commit a745cbdee2f4571917b420553f8cbcd5f51a4cf0
+Author: Martin Milata <martin@martinmilata.cz>
+Date:   Thu Jan 30 17:44:31 2020 +0100
+
+    tdf#129895: handle symlinks when populating chroot
+    
+    In linkOrCopy, the nftw() function is used without the FTW_PHYS flag to
+    populate child roots from systemplate. From man nftw:
+    
+      FTW_PHYS
+        If set, do not follow symbolic links.  (This is what you want.)
+        If not set, symbolic links are followed, but no file is reported twice.
+    
+    Because the order in which directory entries are visited is not defined,
+    having multiple symlinks to a file results in only one of the paths
+    being created in the chroot.
+    
+    This is not really a problem because loolwsd-systemplate-setup creates
+    systemplate without symlinks. Fixing it might prevent unpleasant
+    surprises in the future though, and might possibly allow to make
+    systemplate and chroots smaller (also the manpage says that you want
+    it:)).
+    
+    The commit adds FTW_PHYS flag to the call as well as symlink handling.
+    
+    Change-Id: I01354f529b5d340185988ed026f266caf17a6881
+
+diff --git a/kit/Kit.cpp b/kit/Kit.cpp
+index 34d5b86a5..fbaee8b1b 100644
+--- a/kit/Kit.cpp
++++ b/kit/Kit.cpp
+@@ -210,7 +210,7 @@ namespace
+         if (link(fpath, newPath.toString().c_str()) == -1)
+         {
+             LOG_INF("link(\"" << fpath << "\", \"" <<
+-                    newPath.toString() << "\") failed. Will copy.");
++                    newPath.toString() << "\") failed: " << strerror(errno) << ". Will copy.");
+             try
+             {
+                 File(fpath).copyTo(newPath.toString());
+@@ -226,7 +226,7 @@ namespace
+     }
+ 
+     int linkOrCopyFunction(const char *fpath,
+-                           const struct stat* /*sb*/,
++                           const struct stat* sb,
+                            int typeflag,
+                            struct FTW* /*ftwbuf*/)
+     {
+@@ -282,6 +282,22 @@ namespace
+                 }
+             }
+             break;
++        case FTW_SL:
++            {
++                size_t size = sb->st_size;
++                char target[size + 1];
++                ssize_t written = readlink(fpath, target, size);
++                if (written <= 0 || static_cast<size_t>(written) > size) {
++                    LOG_FTL("readlink(\"" << std::string(fpath) << "\") failed: " << strerror(errno));
++                    Log::shutdown();
++                    std::_Exit(EX_SOFTWARE);
++                }
++                target[written] = '\0';
++
++                File(newPath.parent()).createDirectories();
++                File(target).linkTo(newPath.toString(), Poco::File::LinkType::LINK_SYMBOLIC);
++            }
++            break;
+         case FTW_DNR:
+             LOG_ERR("Cannot read directory '" << fpath << "'");
+             return 1;
+@@ -306,7 +322,7 @@ namespace
+             sourceForLinkOrCopy.pop_back();
+         destinationForLinkOrCopy = destination;
+         linkOrCopyStartTime = std::chrono::steady_clock::now();
+-        if (nftw(source.c_str(), linkOrCopyFunction, 10, FTW_ACTIONRETVAL) == -1)
++        if (nftw(source.c_str(), linkOrCopyFunction, 10, FTW_ACTIONRETVAL|FTW_PHYS) == -1)
+         {
+             LOG_ERR("linkOrCopy: nftw() failed for '" << source << "'");
+         }

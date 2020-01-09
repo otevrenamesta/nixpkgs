@@ -21766,6 +21766,8 @@ in
   });
   libreoffice-still-unwrapped = libreoffice-still.libreoffice;
 
+  libreoffice-online = callPackage ../applications/office/libreoffice/online { };
+
   libvmi = callPackage ../development/libraries/libvmi { };
 
   lifelines = callPackage ../applications/misc/lifelines { };

@@ -404,7 +404,7 @@ in (mkDrv rec {
     ++ lib.optional kdeIntegration [ qtbase qtx11extras kcoreaddons kio ];
 
   passthru = {
-    inherit srcs jdk;
+    inherit srcs jdk pname;
   };
 
   requiredSystemFeatures = [ "big-parallel" ];
