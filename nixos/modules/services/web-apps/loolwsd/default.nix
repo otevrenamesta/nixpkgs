@@ -123,7 +123,7 @@ in
           rm -rf ${dataDir}/{core,systemplate,lotemplate}
 
           ${pkgs.runtimeShell} ${sysTemplateSetup} ${dataDir}/systemplate ${corePkg}/lib/${subdir}
-          find ${dataDir}/systemplate -type d -exec chmod u+wx {} \;
+          find ${dataDir}/systemplate -type d -exec chmod u+wx '{}' +
           mv ${dataDir}/systemplate${corePkg}/lib/${subdir} ${dataDir}/lotemplate
           rm -rf ${dataDir}/systemplate${corePkg}
 
@@ -146,7 +146,7 @@ in
         KillSignal = "SIGINT";
         Restart = "always";
 
-        TimeoutStartSec = "300s"; # initializing systemplate sometimes takes a lot of time
+        TimeoutStartSec = "20min"; # initializing systemplate sometimes takes a lot of time
         TimeoutStopSec = "120s";
 
         StateDirectory = "lool";
