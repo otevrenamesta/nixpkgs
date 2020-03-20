@@ -35,7 +35,7 @@ rec {
   pname = "collaboraoffice";
 
   brandingDeb = fetchurl {
-    url = "https://www.collaboraoffice.com/repos/CollaboraOnline/CODE/code-brand_4.2-14_all.deb";
-    sha256 = "11syyf94gxdkdlrsvx3rkf01j531swdh6aax6nh8c06mv2xr1v9y";
+    url = "https://www.collaboraoffice.com/repos/CollaboraOnline/CODE/code-brand_4.2-17_all.deb";
+    sha256 = "1acybhh6szybldc9wi2fx510bh1wb0416j4zzv5k7lrccy48jbz2";
   };
 }
